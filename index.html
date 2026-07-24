@@ -3,135 +3,576 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>우리 동네 인구 구조 🏘️</title>
+<title>지방소멸 탐구 & 정책 제안 대시보드 🧭</title>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
 <style>
-  :root{
-    --bg:#FFFDF7; --card:#FFF6E0; --border:#F0E2BC;
-    --accent:#E8930C; --gold:#F4B400; --text:#3A2E1A; --muted:#9A8B6A; --shadow:rgba(180,140,20,.18);
+  :root {
+    --bg: #FFFDF7; --card: #FFF6E0; --border: #F0E2BC;
+    --accent: #E8930C; --gold: #F4B400; --text: #3A2E1A; 
+    --muted: #9A8B6A; --shadow: rgba(180,140,20,.18);
+    --danger-high: #E53E3E; --danger-mid: #DD6B20; --danger-low: #D69E2E; --safe: #38A169;
   }
-  body[data-theme="mint"]{--bg:#F4FFFB;--card:#E7FBF3;--border:#C7F0E0;--accent:#0EA371;--gold:#34D399;--text:#0F3D2E;--muted:#6FA992;--shadow:rgba(16,185,129,.18);}
-  body[data-theme="berry"]{--bg:#FFF7FA;--card:#FFE9F1;--border:#FBD5E5;--accent:#E23C86;--gold:#F9A8D4;--text:#4A1D33;--muted:#B98098;--shadow:rgba(236,72,153,.18);}
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--text);transition:background .3s;
-    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;}
-  .wrap{max-width:600px;margin:0 auto;padding:24px 18px 48px;}
-  .themes{display:flex;gap:6px;justify-content:flex-end;margin-bottom:8px;}
-  .themes button{border:1px solid var(--border);background:#fff;color:var(--text);border-radius:99px;
-    padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
-  .themes button.on{background:var(--accent);color:#fff;border-color:var(--accent);}
-  h1{font-size:1.6rem;font-weight:800;letter-spacing:-.02em;margin:.1rem 0;}
-  h1 .a{color:var(--accent);}
-  .under{width:60px;height:4px;border-radius:99px;margin:.4rem 0 .6rem;
-    background:linear-gradient(90deg,var(--gold),var(--accent));}
-  input#q{width:100%;font-size:1rem;padding:.6rem .7rem;border:1px solid var(--border);
-    border-radius:.7rem;background:#fff;color:var(--text);margin-bottom:14px;}
-  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;
-    box-shadow:0 1px 4px var(--shadow);}
-  .card .k{font-size:.74rem;color:var(--muted);font-weight:700;}
-  .card .v{font-size:1.15rem;font-weight:800;color:var(--accent);margin-top:2px;}
-  #py{width:100%;}
-  .foot{color:var(--muted);font-size:.8rem;margin-top:14px;}
-  @media(max-width:560px){.cards{grid-template-columns:repeat(2,1fr);}}
+  body[data-theme="mint"] {
+    --bg: #F4FFFB; --card: #E7FBF3; --border: #C7F0E0;
+    --accent: #0EA371; --gold: #34D399; --text: #0F3D2E; 
+    --muted: #6FA992; --shadow: rgba(16,185,129,.18);
+  }
+  body[data-theme="berry"] {
+    --bg: #FFF7FA; --card: #FFE9F1; --border: #FBD5E5;
+    --accent: #E23C86; --gold: #F9A8D4; --text: #4A1D33; 
+    --muted: #B98098; --shadow: rgba(236,72,153,.18);
+  }
+  
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text); transition: background .3s;
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 20px 16px 40px; }
+  
+  #loader {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--bg); z-index: 9999;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    transition: opacity 0.5s;
+  }
+  .spinner {
+    width: 40px; height: 40px; border: 4px solid var(--border);
+    border-top: 4px solid var(--accent); border-radius: 50%;
+    animation: spin 1s linear infinite; margin-bottom: 12px;
+  }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  .themes { display: flex; gap: 6px; justify-content: flex-end; margin-bottom: 8px; }
+  .themes button {
+    border: 1px solid var(--border); background: #fff; color: var(--text);
+    border-radius: 99px; padding: 4px 10px; font-size: 12px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+  }
+  .themes button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  
+  h1 { font-size: 1.5rem; font-weight: 800; margin: .2rem 0; }
+  h1 .a { color: var(--accent); }
+  .under { width: 50px; height: 4px; border-radius: 99px; margin: .3rem 0 .8rem; background: linear-gradient(90deg, var(--gold), var(--accent)); }
+  
+  .intro-box {
+    background: rgba(255,255,255,0.7); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; font-size: 0.85rem; line-height: 1.5; margin-bottom: 16px;
+  }
+
+  input#q {
+    width: 100%; font-size: 1rem; padding: .7rem 1rem; border: 2px solid var(--border);
+    border-radius: .8rem; background: #fff; color: var(--text); margin-bottom: 12px;
+    outline: none;
+  }
+  input#q:focus { border-color: var(--accent); }
+  
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px; text-align: center; box-shadow: 0 1px 3px var(--shadow);
+  }
+  .card .k { font-size: .72rem; color: var(--muted); font-weight: 700; }
+  .card .v { font-size: 1.05rem; font-weight: 800; color: var(--accent); margin-top: 2px; }
+  
+  /* 지도 카드의 위험도 색상 범례 */
+  .risk-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; color: #fff;
+  }
+  .badge-high { background-color: var(--danger-high); }
+  .badge-mid { background-color: var(--danger-mid); }
+  .badge-low { background-color: var(--danger-low); }
+  .badge-safe { background-color: var(--safe); }
+
+  .mapcard {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px; box-shadow: 0 1px 4px var(--shadow); margin-bottom: 16px;
+  }
+  .mapcard .mt { font-weight: 800; margin-bottom: 10px; font-size: 1.05rem; }
+  .mctl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; font-weight: 700; }
+  .mctl select, .mctl input {
+    border: 1px solid var(--border); border-radius: .6rem; padding: .4rem .6rem;
+    font-family: inherit; font-size: .88rem; background: #fff; color: var(--text);
+  }
+  
+  .mapbox { position: relative; background: #fff; border-radius: 8px; border: 1px solid var(--border); padding: 4px; }
+  #map { width: 100%; height: auto; display: block; }
+  #map path { stroke: #fff; stroke-width: .4; cursor: pointer; transition: fill 0.2s; }
+  #map path.hl { stroke: #000; stroke-width: 1.2; filter: brightness(1.1); }
+  
+  .lgd {
+    position: absolute; left: 8px; bottom: 8px; display: flex; align-items: center; gap: 6px;
+    font-size: .72rem; font-weight: 700; color: var(--muted); background: rgba(255,255,255,.92);
+    border-radius: 8px; padding: 4px 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .lgd .bar-extinction { display: flex; gap: 2px; }
+  .lgd .bar-extinction span { width: 14px; height: 8px; border-radius: 2px; }
+
+  #tip {
+    position: absolute; pointer-events: none; background: rgba(255,255,255,.95);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+    font-size: .78rem; line-height: 1.45; box-shadow: 0 3px 12px var(--shadow);
+    white-space: nowrap; z-index: 10; color: var(--text);
+  }
+  #tip b { font-size: .85rem; color: var(--accent); }
+  
+  .rank { font-size: .8rem; margin-top: 10px; line-height: 1.7; }
+  .rank button {
+    border: 1px solid var(--border); background: #fff; color: var(--text);
+    border-radius: 99px; padding: 2px 8px; font-size: .72rem; font-weight: 700;
+    cursor: pointer; font-family: inherit; margin: 0 3px 3px 0;
+  }
+  .rank button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* 워크시트 (정책 제안 섹션) */
+  .proposal-card {
+    background: #fff; border: 2px dashed var(--accent); border-radius: 14px;
+    padding: 16px; margin-top: 20px; box-shadow: 0 2px 8px var(--shadow);
+  }
+  .proposal-card h2 { font-size: 1.15rem; margin: 0 0 10px 0; color: var(--accent); display: flex; align-items: center; gap: 6px; }
+  .proposal-form label { display: block; font-size: 0.82rem; font-weight: 700; margin: 10px 0 4px; color: var(--text); }
+  .proposal-form input, .proposal-form textarea, .proposal-form select {
+    width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px;
+    font-family: inherit; font-size: 0.88rem; background: var(--bg); color: var(--text);
+  }
+  .proposal-form textarea { height: 80px; resize: vertical; }
+  .btn-submit {
+    margin-top: 12px; width: 100%; background: var(--accent); color: #fff; border: none;
+    border-radius: 8px; padding: 10px; font-size: 0.95rem; font-weight: 800; cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-submit:hover { opacity: 0.9; }
+
+  @media(max-width: 560px) { 
+    .cards { grid-template-columns: repeat(2, 1fr); } 
+    h1 { font-size: 1.3rem; }
+  }
 </style>
 </head>
 <body>
+  <div id="loader">
+    <div class="spinner"></div>
+    <p style="font-weight: 700; color: var(--muted);">지도 및 인구 데이터 로딩 중...</p>
+  </div>
+
   <div class="wrap">
     <div class="themes" id="themes">
       <button data-th="" class="on">🍞 크림</button>
       <button data-th="mint">🌿 민트</button>
       <button data-th="berry">🍓 베리</button>
     </div>
-    <h1>🏘️ 우리 동네 <span class="a">인구 구조</span></h1>
+    
+    <h1>🚨 지방소멸 <span class="a">탐구 & 정책 제안</span></h1>
     <div class="under"></div>
-    <input id="q" list="regions" placeholder="동네 이름 입력 (예: 서울특별시 종로구)">
+
+    <div class="intro-box">
+      <b>📌 탐구 가이드:</b> <b>지방소멸위험지수</b>란 20~39세 여성 인구를 65세 이상 인구로 나눈 값입니다. 
+      지수가 <b>0.5 미만</b>이면 소멸 위험 지역에 해당합니다. 지도에서 우리 동네와 전국 지역을 비교해 보고, 지역을 살아나게 할 멋진 정책을 제안해 보세요!
+    </div>
+
+    <!-- 지도 대시보드 -->
+    <div class="mapcard">
+      <div class="mt">🗺️ 전국 소멸위험도 지도</div>
+      <div class="mctl">
+        <select id="metric">
+          <option value="extinction" selected>🚨 지방소멸위험지수 (20~39세 여성/65세 이상)</option>
+          <option value="65,100">고령화율 (65세 이상 %)</option>
+          <option value="0,14">유소년 비율 (0~14세 %)</option>
+          <option value="0,6">영유아 비율 (0~6세 %)</option>
+        </select>
+      </div>
+      <div class="mapbox" id="mapbox">
+        <svg id="map"></svg>
+        <div class="lgd" id="legendContent"></div>
+        <div id="tip" style="display:none;"></div>
+      </div>
+      <div class="rank" id="rankTop"></div>
+      <div class="rank" id="rankLow"></div>
+    </div>
+
+    <!-- 지역 상세 조회 -->
+    <input id="q" list="regions" placeholder="지역 이름 검색 (예: 경상북도 의성군, 서울특별시 종로구)" autocomplete="off">
     <datalist id="regions"></datalist>
+    
     <div class="cards" id="cards"></div>
     <div id="py"></div>
-    <p class="foot">데이터: 행정안전부 주민등록 인구(매월 자동 갱신)</p>
+
+    <!-- 학생 활동용 아이디어 정책 제안서 -->
+    <div class="proposal-card">
+      <h2>💡 <span id="targetRegionName">우리 동네</span> 맞춤형 정책 제안서</h2>
+      <p style="font-size:0.8rem; color:var(--muted); margin:0 0 10px;">지도나 검색으로 선택한 지역의 위험도를 낮추기 위한 아이디어를 적어보세요.</p>
+      
+      <div class="proposal-form">
+        <label>1. 제안자 (이름 / 모둠명)</label>
+        <input type="text" id="author" placeholder="예: 3모둠 / 홍길동">
+
+        <label>2. 정책 주요 분야</label>
+        <select id="policyCategory">
+          <option value="청년·일자리">💼 청년 유입 및 일자리 창출</option>
+          <option value="육아·교육">👶 육아 지원 및 교육 환경 개선</option>
+          <option value="의료·복지">🏥 의료·교통·복지 서비스 강화</option>
+          <option value="문화·관광">🎨 문화·관광 및 지역 활성화</option>
+          <option value="기타">✨ 기타 창의적 아이디어</option>
+        </select>
+
+        <label>3. 정책 제목</label>
+        <input type="text" id="policyTitle" placeholder="예: 청년 창업가를 위한 시골 한달살이 마을 조성">
+
+        <label>4. 구체적인 실행 방안 (이 정책이 왜 필요하고 어떻게 도움이 될까요?)</label>
+        <textarea id="policyDetail" placeholder="예: 청년들에게 집과 연수 공간을 제공하여 지역에 정착할 기회를 줍니다..."></textarea>
+
+        <button class="btn-submit" onclick="saveProposal()">📝 제안서 저장 및 완성하기</button>
+      </div>
+    </div>
+    
+    <p class="foot" style="text-align:center; color:var(--muted); font-size:0.75rem; margin-top:20px;">
+      데이터 출처: 행정안전부 주민등록 인구 통계
+    </p>
   </div>
 
 <script>
-const 기본지역 = "서울특별시 종로구"; // ← 보고 싶은 지역으로 바꿔도 돼요
-const DATA_URL = "https://raw.githubusercontent.com/greatsong/modudata/main/data/population_latest.csv";
+const CONFIG = {
+  DEFAULT_REGION: "서울특별시 종로구",
+  DATA_URL: "https://raw.githubusercontent.com/greatsong/modudata/main/data/population_latest.csv",
+  MAP_URL: "https://raw.githubusercontent.com/greatsong/modudata/main/data/sigungu_pop.json"
+};
 
-let HEADER = [], INDEX = {};
-const num = s => parseInt(String(s).replace(/[^0-9-]/g,''),10) || 0;   // 따옴표·천단위 쉼표 제거
-// 따옴표로 감싼 CSV 한 줄 파싱 (값 안에 쉼표가 있어 단순 split 불가)
-function parseCSV(line){const o=[];let c='',q=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(q&&line[i+1]==='"'){c+='"';i++;}else q=!q;}else if(ch===','&&!q){o.push(c);c='';}else c+=ch;}o.push(c);return o;}
-const cleanName = s => s.replace(/\s*\(\d+\)\s*$/,'').replace(/\s+/g,' ').trim();  // "서울…종로구 (1111…)" → "서울…종로구"
+const STATE = {
+  header: [], index: {}, ageCache: {},
+  mapValues: {}, mapRank: {}, mapRegions: [], totalRegions: 0,
+  currentSelectedRegion: ""
+};
 
-function ageBySex(cells){
+const parseNumber = str => parseInt(String(str).replace(/[^0-9-]/g, ''), 10) || 0;
+const cleanRegionName = str => str.replace(/\s*\(\d+\)\s*$/, '').replace(/\s+/g, ' ').trim();
+const sumRange = (arr, lo, hi) => { let s = 0; for (let i = lo; i <= hi; i++) s += arr[i]; return s; };
+
+const SIDO_SHORT = {'강원특별자치도':'강원','경기도':'경기','경상남도':'경남','경상북도':'경북','광주광역시':'광주','대구광역시':'대구','대전광역시':'대전','부산광역시':'부산','서울특별시':'서울','세종특별자치시':'세종','울산광역시':'울산','인천광역시':'인천','전라남도':'전남','전북특별자치도':'전북','제주특별자치도':'제주','충청남도':'충남','충청북도':'충북'};
+const getShortName = name => { const [s, ...r] = name.split(' '); const short = SIDO_SHORT[s] || s.slice(0,2); return r.length ? `${short} ${r.join(' ')}` : short; };
+
+function parseCSVLine(line) {
+  const res = []; let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { if (q && line[i+1] === '"') { cur += '"'; i++; } else q = !q; }
+    else if (ch === ',' && !q) { res.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  res.push(cur);
+  return res;
+}
+
+function getAgeBySex(cells) {
   const m = new Array(101).fill(0), f = new Array(101).fill(0);
-  for(let i=1;i<HEADER.length;i++){
-    const mm = HEADER[i].match(/_(\d+)세/); if(!mm) continue;   // 총인구수·연령구간 열은 건너뜀
-    const a = Math.min(100, +mm[1]);
-    if(HEADER[i].includes('_남_')) m[a]+=num(cells[i]);
-    else if(HEADER[i].includes('_여_')) f[a]+=num(cells[i]);    // _계_ 열은 무시(남+여만)
+  for (let i = 1; i < STATE.header.length; i++) {
+    const match = STATE.header[i].match(/_(\d+)세/);
+    if (!match) continue;
+    const age = Math.min(100, +match[1]);
+    if (STATE.header[i].includes('_남_')) m[age] += parseNumber(cells[i]);
+    else if (STATE.header[i].includes('_여_')) f[age] += parseNumber(cells[i]);
   }
   return { m, f };
 }
-const rsum = (a,lo,hi)=>{ let s=0; for(let i=lo;i<=hi;i++) s+=a[i]; return s; };
 
-function drawPyramid(m, f){
-  const ages=Array.from({length:101},(_,i)=>i);   // 0~100세(100+) 1세 단위
-  const mx=Math.max(...m,...f,1);
-  const step=Math.max(500, Math.ceil(mx/4/500)*500), lim=Math.ceil(mx/step)*step;
-  const tv=[]; for(let v=-lim; v<=lim; v+=step) tv.push(v);
-  Plotly.react('py',[
-    {y:ages,x:m.map(v=>-v),name:'남자',type:'bar',orientation:'h',marker:{color:'#4C8DF6'},
-     customdata:m,hovertemplate:'%{y}세 · 남 %{customdata:,}명<extra></extra>'},
-    {y:ages,x:f,name:'여자',type:'bar',orientation:'h',marker:{color:'#F4789B'},
-     hovertemplate:'%{y}세 · 여 %{x:,}명<extra></extra>'}
-  ],{
-    barmode:'relative', bargap:0.15, height:560, margin:{l:46,r:14,t:6,b:28},
-    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
-    font:{family:'-apple-system,"Malgun Gothic",sans-serif',size:12,color:'#333'},
-    legend:{orientation:'h',x:0.5,xanchor:'center',y:1.03},
-    xaxis:{tickvals:tv,ticktext:tv.map(v=>Math.abs(v).toLocaleString()),zeroline:true,zerolinecolor:'#ccc',gridcolor:'rgba(0,0,0,.06)',fixedrange:true},
-    yaxis:{dtick:10,ticksuffix:'세',range:[-0.6,100.6],fixedrange:true}
-  },{displayModeBar:false,responsive:true});
+function getRegionData(regionName) {
+  if (STATE.ageCache[regionName]) return STATE.ageCache[regionName];
+  const cells = STATE.index[regionName]; if (!cells) return null;
+  const { m, f } = getAgeBySex(cells);
+  
+  const f2039 = sumRange(f, 20, 39);
+  const old65 = sumRange(m, 65, 100) + sumRange(f, 65, 100);
+  const extinctionIndex = old65 > 0 ? (f2039 / old65) : 0;
+  
+  STATE.ageCache[regionName] = {
+    m, f,
+    total: sumRange(m, 0, 100) + sumRange(f, 0, 100),
+    f2039, old65,
+    extinctionIndex
+  };
+  return STATE.ageCache[regionName];
 }
 
-function show(name){
-  const cells = INDEX[name]; if(!cells) return;
-  const {m,f} = ageBySex(cells);
-  const mT = rsum(m,0,100), fT = rsum(f,0,100), total = mT+fT;
-  const old = rsum(m,65,100)+rsum(f,65,100), young = rsum(m,0,14)+rsum(f,0,14);
-  const pct = n => total ? (n/total*100).toFixed(1)+'%' : '-';
+function getExtinctionGrade(idx) {
+  if (idx < 0.2) return { label: "고위험", color: "var(--danger-high)", badgeClass: "badge-high" };
+  if (idx < 0.5) return { label: "위험", color: "var(--danger-mid)", badgeClass: "badge-mid" };
+  if (idx < 1.0) return { label: "주의", color: "var(--danger-low)", badgeClass: "badge-low" };
+  return { label: "보통/안심", color: "var(--safe)", badgeClass: "badge-safe" };
+}
+
+function renderPyramidChart(m, f) {
+  const ages = Array.from({length: 101}, (_, i) => i);
+  const maxVal = Math.max(...m, ...f, 1);
+  const step = Math.max(500, Math.ceil(maxVal / 4 / 500) * 500);
+  const limit = Math.ceil(maxVal / step) * step;
+  const tickVals = []; for (let v = -limit; v <= limit; v += step) tickVals.push(v);
+  
+  Plotly.react('py', [
+    { y: ages, x: m.map(v => -v), name: '남자', type: 'bar', orientation: 'h', marker: {color: '#4C8DF6'}, customdata: m, hovertemplate: '%{y}세 · 남 %{customdata:,}명<extra></extra>' },
+    { y: ages, x: f, name: '여자', type: 'bar', orientation: 'h', marker: {color: '#F4789B'}, hovertemplate: '%{y}세 · 여 %{x:,}명<extra></extra>' }
+  ], {
+    barmode: 'relative', bargap: 0.15, height: 420, margin: { l: 40, r: 10, t: 20, b: 30 },
+    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { family: '-apple-system,"Malgun Gothic",sans-serif', size: 11, color: 'var(--text)' },
+    legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: 1.1 },
+    xaxis: { tickvals: tickVals, ticktext: tickVals.map(v => Math.abs(v).toLocaleString()), zeroline: true, zerolinecolor: '#ccc', gridcolor: 'rgba(0,0,0,.06)', fixedrange: true },
+    yaxis: { dtick: 10, ticksuffix: '세', range: [-0.6, 100.6], fixedrange: true }
+  }, { displayModeBar: false, responsive: true });
+}
+
+function showRegionDetails(regionName) {
+  STATE.currentSelectedRegion = regionName;
+  const data = getRegionData(regionName); if (!data) return;
+  const { m, f, total, extinctionIndex, f2039, old65 } = data;
+  const grade = getExtinctionGrade(extinctionIndex);
+  
+  document.getElementById('targetRegionName').textContent = regionName;
+  
   document.getElementById('cards').innerHTML = `
-    <div class="card"><div class="k">총인구</div><div class="v">${total.toLocaleString()}</div></div>
-    <div class="card"><div class="k">남 / 여</div><div class="v" style="font-size:.92rem">${mT.toLocaleString()}<br>${fT.toLocaleString()}</div></div>
-    <div class="card"><div class="k">고령화율 65+</div><div class="v">${pct(old)}</div></div>
-    <div class="card"><div class="k">유소년 0-14</div><div class="v">${pct(young)}</div></div>`;
-  drawPyramid(m, f);
+    <div class="card">
+      <div class="k">소멸위험지수</div>
+      <div class="v" style="font-size:1.1rem;">${extinctionIndex.toFixed(2)}</div>
+      <span class="risk-badge ${grade.badgeClass}" style="margin-top:2px;">${grade.label}</span>
+    </div>
+    <div class="card"><div class="k">총인구</div><div class="v">${total.toLocaleString()}명</div></div>
+    <div class="card"><div class="k">20~39세 여성</div><div class="v" style="color:#E23C86">${f2039.toLocaleString()}명</div></div>
+    <div class="card"><div class="k">65세 이상</div><div class="v" style="color:#DD6B20">${old65.toLocaleString()}명</div></div>
+  `;
+  
+  renderPyramidChart(m, f);
 }
 
-document.getElementById('themes').addEventListener('click', e=>{
-  const b = e.target.closest('button'); if(!b) return;
-  document.body.dataset.theme = b.dataset.th; localStorage.setItem('pop_theme', b.dataset.th);
-  document.querySelectorAll('.themes button').forEach(x=>x.classList.toggle('on', x===b));
-});
-const st = localStorage.getItem('pop_theme') || '';
-document.body.dataset.theme = st;
-document.querySelectorAll('.themes button').forEach(x=>x.classList.toggle('on', x.dataset.th===st));
-
-(async ()=>{
-  const buf = await (await fetch(DATA_URL)).arrayBuffer();
-  const text = new TextDecoder('euc-kr').decode(buf);   // 행안부 원본은 cp949 인코딩
-  const lines = text.trim().split(/\r?\n/);
-  HEADER = parseCSV(lines[0]);
-  const dl = document.getElementById('regions');
-  lines.slice(1).forEach(line=>{
-    const cells = parseCSV(line); const name = cleanName(cells[0]);
-    INDEX[name] = cells;
-    const o = document.createElement('option'); o.value = name; dl.appendChild(o);
+function initializeMap(mapDataList) {
+  const kx = Math.cos(36 * Math.PI / 180) * 100, ky = 100;
+  const px = lon => lon * kx, py = lat => -lat * ky;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  
+  mapDataList.forEach(g => g.p.forEach(poly => poly.forEach(ring => ring.forEach(pt => {
+    const x = px(pt[0]), y = py(pt[1]);
+    if (x < x0) x0 = x; if (x > x1) x1 = x;
+    if (y < y0) y0 = y; if (y > y1) y1 = y;
+  }))));
+  
+  const svg = document.getElementById('map');
+  svg.setAttribute('viewBox', `${(x0 - 2).toFixed(1)} ${(y0 - 2).toFixed(1)} ${(x1 - x0 + 4).toFixed(1)} ${(y1 - y0 + 4).toFixed(1)}`);
+  
+  const pathMap = new Map();
+  mapDataList.forEach(g => {
+    let d = '';
+    g.p.forEach(poly => poly.forEach(ring => {
+      d += 'M' + ring.map(pt => px(pt[0]).toFixed(1) + ' ' + py(pt[1]).toFixed(1)).join('L') + 'Z';
+    }));
+    pathMap.set(g.n, (pathMap.get(g.n) || '') + d);
   });
-  const q = document.getElementById('q'); q.value = 기본지역;
-  q.addEventListener('input', ()=>{ if(INDEX[q.value]) show(q.value); });
-  show(기본지역);
-})().catch(e=>document.getElementById('cards').textContent = '⚠️ ' + e.message);
+  
+  pathMap.forEach((pathString, regionName) => {
+    const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pathEl.setAttribute('d', pathString);
+    pathEl.addEventListener('pointerenter', () => { pathEl.classList.add('hl'); svg.appendChild(pathEl); });
+    pathEl.addEventListener('pointermove', e => showMapTooltip(e, regionName));
+    pathEl.addEventListener('pointerleave', () => { pathEl.classList.remove('hl'); hideMapTooltip(); });
+    pathEl.addEventListener('click', () => selectRegion(regionName));
+    
+    svg.appendChild(pathEl);
+    STATE.mapRegions.push({ name: regionName, element: pathEl });
+  });
+}
+
+function updateMapColors() {
+  const metricType = document.getElementById('metric').value;
+  const isExtinctionMode = metricType === 'extinction';
+  const legendBox = document.getElementById('legendContent');
+
+  if (isExtinctionMode) {
+    legendBox.innerHTML = `
+      <div class="bar-extinction">
+        <span style="background:var(--danger-high)"></span> 고위험(&lt;0.2)
+        <span style="background:var(--danger-mid); margin-left:4px;"></span> 위험(0.2~0.5)
+        <span style="background:var(--danger-low); margin-left:4px;"></span> 주의(0.5~1.0)
+        <span style="background:var(--safe); margin-left:4px;"></span> 보통(&gt;1.0)
+      </div>`;
+  } else {
+    legendBox.innerHTML = `<span id="lgMin"></span> <span style="width:60px;height:6px;background:linear-gradient(90deg,#FFF3D6,#D9480F);border-radius:99px;display:inline-block;"></span> <span id="lgMax"></span>`;
+  }
+
+  const validValues = [];
+  STATE.mapRegions.forEach(({ name }) => {
+    const data = getRegionData(name);
+    let val = null;
+    if (data && data.total) {
+      if (isExtinctionMode) {
+        val = data.extinctionIndex;
+      } else {
+        const [lo, hi] = metricType.split(',').map(Number);
+        val = (sumRange(data.m, lo, hi) + sumRange(data.f, lo, hi)) / data.total * 100;
+      }
+    }
+    STATE.mapValues[name] = val;
+    if (val != null) validValues.push(val);
+  });
+
+  const vMin = Math.min(...validValues), vMax = Math.max(...validValues);
+  if (!isExtinctionMode) {
+    document.getElementById('lgMin').textContent = vMin.toFixed(1) + '%';
+    document.getElementById('lgMax').textContent = vMax.toFixed(1) + '%';
+  }
+
+  STATE.mapRegions.forEach(({ name, element }) => {
+    const val = STATE.mapValues[name];
+    if (val == null) { element.setAttribute('fill', '#eee'); return; }
+
+    if (isExtinctionMode) {
+      const grade = getExtinctionGrade(val);
+      element.setAttribute('fill', grade.color);
+    } else {
+      const ratio = (vMax === vMin) ? 0 : (val - vMin) / (vMax - vMin);
+      element.setAttribute('fill', `rgb(${Math.round(255+(217-255)*ratio)},${Math.round(243+(72-243)*ratio)},${Math.round(214+(15-214)*ratio)})`);
+    }
+  });
+
+  // 순위 계산 (지수의 경우 낮은 것이 위험하므로 내림차순/오름차순 명확히 구분)
+  const sorted = STATE.mapRegions.filter(({ name }) => STATE.mapValues[name] != null)
+    .map(({ name }) => name)
+    .sort((a, b) => isExtinctionMode ? STATE.mapValues[a] - STATE.mapValues[b] : STATE.mapValues[b] - STATE.mapValues[a]);
+    
+  STATE.totalRegions = sorted.length;
+  sorted.forEach((name, i) => STATE.mapRank[name] = i + 1);
+
+  const fmtVal = v => isExtinctionMode ? v.toFixed(2) : v.toFixed(1) + '%';
+  const createBtns = names => names.map(n => `<button data-n="${n}">${getShortName(n)} (${fmtVal(STATE.mapValues[n])})</button>`).join('');
+
+  if (isExtinctionMode) {
+    document.getElementById('rankTop').innerHTML = '🔴 <b>가장 위험한 지역 5곳</b> · ' + createBtns(sorted.slice(0, 5));
+    document.getElementById('rankLow').innerHTML = '🟢 <b>가장 안심되는 지역 5곳</b> · ' + createBtns(sorted.slice(-5).reverse());
+  } else {
+    document.getElementById('rankTop').innerHTML = '🏆 <b>상위 5</b> · ' + createBtns(sorted.slice(0, 5));
+    document.getElementById('rankLow').innerHTML = '🐢 <b>하위 5</b> · ' + createBtns(sorted.slice(-5).reverse());
+  }
+}
+
+const tipEl = document.getElementById('tip');
+function showMapTooltip(e, regionName) {
+  const val = STATE.mapValues[regionName];
+  const data = getRegionData(regionName);
+  const isExtinction = document.getElementById('metric').value === 'extinction';
+  
+  let valText = '-';
+  if (val != null) {
+    if (isExtinction) {
+      const g = getExtinctionGrade(val);
+      valText = `위험지수 <b>${val.toFixed(2)}</b> (${g.label})`;
+    } else {
+      valText = `비율 <b>${val.toFixed(1)}%</b>`;
+    }
+  }
+
+  tipEl.innerHTML = `<b>${regionName}</b><br>총인구 ${data ? data.total.toLocaleString() : '-'}명<br>${valText}`;
+  tipEl.style.display = 'block';
+  
+  const rect = document.getElementById('mapbox').getBoundingClientRect();
+  tipEl.style.left = Math.max(0, Math.min(e.clientX - rect.left + 10, rect.width - tipEl.offsetWidth - 2)) + 'px';
+  tipEl.style.top  = Math.max(0, e.clientY - rect.top - tipEl.offsetHeight - 8) + 'px';
+}
+function hideMapTooltip() { tipEl.style.display = 'none'; }
+
+function selectRegion(regionName) {
+  if (!STATE.index[regionName]) return;
+  document.getElementById('q').value = regionName;
+  showRegionDetails(regionName);
+}
+
+function saveProposal() {
+  const author = document.getElementById('author').value || '익명';
+  const category = document.getElementById('policyCategory').value;
+  const title = document.getElementById('policyTitle').value;
+  const detail = document.getElementById('policyDetail').value;
+  const region = STATE.currentSelectedRegion;
+
+  if (!title || !detail) {
+    alert("정책 제목과 실행 방안을 모두 입력해주세요!");
+    return;
+  }
+
+  const resultText = `
+========================================
+[ 💡 지방소멸 대응 지역 정책 제안서 ]
+========================================
+• 대상 지역: ${region}
+• 제 안 자: ${author}
+• 정책 분야: ${category}
+----------------------------------------
+📌 정책 제목: ${title}
+
+📝 구체적 실행 방안:
+${detail}
+========================================
+제출일시: ${new Date().toLocaleString()}
+`;
+
+  // 텍스트 파일로 다운로드
+  const blob = new Blob([resultText], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `지방소멸정책제안_${region.replace(/\s+/g, '_')}_${author}.txt`;
+  a.click();
+
+  alert(`🎉 [${region}] 정책 제안서 작성이 완료되어 다운로드되었습니다!`);
+}
+
+function setupEvents() {
+  document.getElementById('metric').addEventListener('change', updateMapColors);
+  ['rankTop', 'rankLow'].forEach(id => document.getElementById(id).addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (btn) selectRegion(btn.dataset.n);
+  }));
+
+  document.getElementById('themes').addEventListener('click', e => {
+    const btn = e.target.closest('button'); if (!btn) return;
+    document.body.dataset.theme = btn.dataset.th;
+    document.querySelectorAll('.themes button').forEach(x => x.classList.toggle('on', x === btn));
+  });
+
+  const searchInput = document.getElementById('q');
+  searchInput.addEventListener('change', () => { if (STATE.index[searchInput.value]) showRegionDetails(searchInput.value); });
+  searchInput.addEventListener('keydown', e => { if (e.key === 'Enter' && STATE.index[searchInput.value]) showRegionDetails(searchInput.value); });
+}
+
+async function initApp() {
+  setupEvents();
+  try {
+    const [csvBuffer, mapData] = await Promise.all([
+      fetch(CONFIG.DATA_URL).then(r => r.arrayBuffer()),
+      fetch(CONFIG.MAP_URL).then(r => r.json()).catch(() => fetch("sigungu_pop.json").then(r => r.json()))
+    ]);
+
+    const csvText = new TextDecoder('euc-kr').decode(csvBuffer);
+    const lines = csvText.trim().split(/\r?\n/);
+    STATE.header = parseCSVLine(lines[0]);
+    
+    const dl = document.getElementById('regions');
+    lines.slice(1).forEach(line => {
+      if (!line) return;
+      const cells = parseCSVLine(line);
+      const name = cleanRegionName(cells[0]);
+      STATE.index[name] = cells;
+      const opt = document.createElement('option'); opt.value = name; dl.appendChild(opt);
+    });
+
+    initializeMap(mapData.sigungu);
+    updateMapColors();
+    
+    document.getElementById('q').value = CONFIG.DEFAULT_REGION;
+    showRegionDetails(CONFIG.DEFAULT_REGION);
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    const loader = document.getElementById('loader');
+    loader.style.opacity = '0';
+    setTimeout(() => loader.style.display = 'none', 500);
+  }
+}
+
+initApp();
 </script>
 </body>
 </html>
